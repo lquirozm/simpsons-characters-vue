@@ -38,26 +38,67 @@ const personajesFiltrados = computed(() => {
   )
 })
 
-function agregarFavorito(id) {
+async function agregarFavorito(id) {
   const actual = results.value.find(result => result.id == id)
   if (actual && !favoritos.value.find(fav => fav.id === id)) {
-    favoritos.value = [...favoritos.value, actual]
-    localStorage.setItem('favoritos', JSON.stringify(favoritos.value))
+    try {
+      const res = await fetch('http://localhost:3000/favorites', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: actual.id,
+        name: actual.name,
+        age: actual.age,
+        occupation: actual.occupation,
+        status: actual.status
+      })
+    })
+    const result = await res.json()
+    favoritos.value.push(result)
+    
+    if(res.ok) {
+      console.log('Favorito agregado', result)
+    }
+    else {
+      console.error(result.message)
+    }
+    } catch (e) {
+      console.error(e)
+    }
   }
 }
 
-function eliminarFavorito(id) {
-  favoritos.value = favoritos.value.filter(fav => fav.id !== id)
-  localStorage.setItem('favoritos', JSON.stringify(favoritos.value))
+async function eliminarFavorito(id) {
+  try {
+    const res = await fetch(`http://localhost:3000/favorites/${id}`, {
+      method: 'DELETE'
+    });
+    console.log("status de respuesta:", res.status)
+    const data = await res.json()
+    if(res.ok) {
+      console.log('Favorito eliminado')
+      favoritos.value = favoritos.value.filter(fav => fav.id !== id)
+    } else {
+      console.error(data.message)
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 function consultarFavoritos() {
   dialogVisible.value = true
 }
 
-function cargarFavoritos() {
-  const storedFavs = JSON.parse(localStorage.getItem('favoritos')) || []
-  favoritos.value = storedFavs
+async function cargarFavoritos() {
+  try {
+    const res = await fetch('http://localhost:3000/favorites')
+    favoritos.value = await res.json()
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 onMounted(() => {
@@ -121,10 +162,11 @@ watch(increment, () => {
   </div>
   <el-dialog v-model="dialogVisible" title="Favoritos" width="900">
     <el-table :data="favoritos" stripe v-if="favoritos.length > 0" >
+      <el-table-column prop="id" label="ID" width="100"/>
       <el-table-column prop="name" label="Name" width="180" />
-      <el-table-column prop="age" label="Age" width="180" />
-      <el-table-column prop="occupation" label="Occupation" />
-      <el-table-column prop="status" label="Status" width="180" />
+      <el-table-column prop="age" label="Age" width="100" />
+      <el-table-column prop="occupation" label="Occupation" width="200" />
+      <el-table-column prop="status" label="Status" width="150" />
       <el-table-column label="Operations" width="180">
         <template #default="scope">
           <el-button
