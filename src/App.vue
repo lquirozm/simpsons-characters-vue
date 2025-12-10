@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import SimpsonsInfo from './components/SimpsonsInfo.vue';
 </script>
 
 
 
 <template>
-  <SimpsonsInfo />
+  <router-view />
 </template>
 
 
